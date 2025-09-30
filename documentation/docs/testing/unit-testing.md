@@ -286,10 +286,6 @@ This test ensures the component sets up proper event listeners and voice selecti
 ### `should clean up on unmount`
 This test verifies the component cancels any pending speech and removes event listeners during unmounting.
 
-## useAACSounds Hook
-
-Unit tests for the useAACSounds component are located in `StoryQuest/app/Components/__tests__/useAACSounds.test.tsx`.
-
 ### `should load sound correctly`
 Confirms the hook properly initializes Audio instances with correct URLs and preload settings for immediate playback.
 
