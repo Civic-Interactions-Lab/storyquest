@@ -1,64 +1,51 @@
 //StoryQuest/app/Components/TextToSpeechAACButtons.tsx
 
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 
 interface TextToSpeechProps {
     text: string;
     disabled?: boolean;
     onSpeechEnd?: () => void; // Callback for when speech ends
+    onButtonPress?: (action: 'play' | 'stop', text: string) => void; // New callback for button presses
 }
 
 const TextToSpeechAACButtons: React.FC<TextToSpeechProps> = ({ 
     text, 
     onSpeechEnd, 
-    disabled 
+    disabled,
+    onButtonPress
 }) => {
-    const [isPaused, setIsPaused] = useState(false);
-    const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+    // Remove speech synthesis state and refs - parent will handle speech
+    // const [isPaused, setIsPaused] = useState(false);
+    // const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-    useEffect(() => {
-        const synth = window.speechSynthesis;
-        const u = new SpeechSynthesisUtterance(text);
+    // Remove speech synthesis useEffect - parent will handle speech
+    // useEffect(() => {
+    //     const synth = window.speechSynthesis;
+    //     const u = new SpeechSynthesisUtterance(text);
 
-        const handleEnd = () => {
-            setIsPaused(false);
-            onSpeechEnd?.(); // Notify parent when speech ends
-        };
+    //     const handleEnd = () => {
+    //         setIsPaused(false);
+    //         onSpeechEnd?.(); // Notify parent when speech ends
+    //     };
 
-        u.addEventListener("end", handleEnd);
-        utteranceRef.current = u;
+    //     u.addEventListener("end", handleEnd);
+    //     utteranceRef.current = u;
 
-        return () => {
-            synth.cancel(); // Cancel any ongoing speech when the component unmounts or text changes
-            u.removeEventListener("end", handleEnd);
-        };
-    }, [text, onSpeechEnd]); // Recreate utterance when text changes
+    //     return () => {
+    //         synth.cancel(); // Cancel any ongoing speech when the component unmounts or text changes
+    //         u.removeEventListener("end", handleEnd);
+    //     };
+    // }, [text, onSpeechEnd]); // Recreate utterance when text changes
 
     const handlePlay = () => {
         if (disabled) return;
-
-        const synth = window.speechSynthesis;
-        synth.cancel(); // Cancel any ongoing speech before starting a new one
-
-        if (isPaused) {
-            synth.resume(); // Resume if paused
-        } else {
-            synth.speak(utteranceRef.current!);
-        }
-
-        setIsPaused(false);
-    };
-
-    const handlePause = () => {
-        const synth = window.speechSynthesis;
-        synth.pause(); // Pause the speech
-        setIsPaused(true);
+        onButtonPress?.('play', text);
     };
 
     const handleStop = () => {
-        if (disabled) return; // NEW: Don't allow interaction when disabled
-        window.speechSynthesis.cancel();
-        setIsPaused(false);
+        if (disabled) return;
+        onButtonPress?.('stop', text);
     };
 
     return (
