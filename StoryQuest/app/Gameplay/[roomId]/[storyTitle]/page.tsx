@@ -22,7 +22,6 @@ import { motion, AnimatePresence } from "framer-motion";
 //   SlideAcrossEffect,
 // } from "../../../Components/AnimationUtils";
 import CompletionPage from "../../../CompletionPage/page";
-import TextToSpeechTextOnly from "@/Components/TextToSpeechTextOnly";
 // import useAACSounds from "@/Components/useAACSounds";
 import { db } from "../../../../firebaseControls/firebaseConfig";
 import {
@@ -45,15 +44,28 @@ const loadPreferredVoices = (): SpeechSynthesisVoice[] => {
   return voices.filter((v) => v.lang.includes("en-US"));
 };
 
-const preferredVoices = ["Google US English", "Samantha", "Microsoft Zira Desktop", "Microsoft Aria Online (Natural)", "Google US Female",];
+const preferredVoices = ["Google US English", "Samantha", "Microsoft Zira Desktop", "Microsoft Aria Online (Natural)", "Google US Female"];
 
 const getPreferredVoice = (): SpeechSynthesisVoice | null => {
-  const voices = loadPreferredVoices();
+  // Ensure voices are loaded
+  let voices = loadPreferredVoices();
+  
+  // If no voices loaded yet, trigger loading and try again
+  if (voices.length === 0) {
+    window.speechSynthesis.getVoices(); // Trigger voice loading
+    voices = loadPreferredVoices();
+  }
+  
+  // Still no voices? Wait for voiceschanged event
+  if (voices.length === 0) {
+    return null; // Will be handled by the component's voice loading logic
+  }
+  
   for (const name of preferredVoices) {
     const match = voices.find((v) => v.name === name);
     if (match) return match;
   }
-  //fallback to first us eng voice if none match
+  // Fallback to first US English voice if none match
   return voices[0] || null;
 };
 
@@ -149,6 +161,27 @@ export default function Home() {
   const [speechQueue, setSpeechQueue] = useState<SpeechSynthesisUtterance[]>([]);
   // const [isSpeaking, setIsSpeaking] = useState(false);
   const [isFinalStoryRead, setIsFinalStoryRead] = useState(false);
+  const [voicesLoaded, setVoicesLoaded] = useState(false);
+  const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
+
+  // Handle voice loading
+  useEffect(() => {
+    const handleVoicesChanged = () => {
+      setVoicesLoaded(true);
+    };
+
+    // Check if voices are already loaded
+    if (window.speechSynthesis.getVoices().length > 0) {
+      setVoicesLoaded(true);
+    } else {
+      // Listen for voices to load
+      window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+    }
+
+    return () => {
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+    };
+  }, []);
 
   //Grabbing roomID and story title from URL
   //roomID stores in firestore
@@ -444,32 +477,87 @@ export default function Home() {
     setSpeechQueue(queue => [u, ...queue]);
   }, [phrase]);
 
-  // useEffect to process speach queue
+  // useEffect to process speech queue
   useEffect(() => {
     console.log("SPEECH QUEUE", speechQueue);
-    // Only proceed if there are words to speak and TTS is not speaking at the moment
-    if (speechQueue.length > 0) {
-      // setIsSpeaking(true);
-
+    // Only proceed if there are utterances to speak, we're not already processing, and voices are loaded
+    if (speechQueue.length > 0 && !isProcessingSpeech && voicesLoaded) {
+      setIsProcessingSpeech(true);
+      
       // Get the first utterance from the queue
       const utterance = speechQueue[0];
 
-      // When utterance finishes speaking, removes first item from queue and resets isSpeaking
-      utterance.addEventListener('end', () => {
+      // Define event handlers
+      const handleEnd = () => {
         console.log("Finished utterance:", utterance);
         setSpeechQueue((prevQueue) => prevQueue.slice(1));
-        // setIsSpeaking(false);
-      });
+        setIsProcessingSpeech(false);
+      };
 
-      utterance.addEventListener('error', (e) => {
+      const handleError = (e: SpeechSynthesisErrorEvent) => {
         console.warn("Speech synthesis utterance error:", e);
         console.warn("Problematic utterance:", utterance);
         setSpeechQueue((prevQueue) => prevQueue.slice(1));
-        // setIsSpeaking(false);
-      });
+        setIsProcessingSpeech(false);
+      };
+
+      // Add event listeners
+      utterance.addEventListener('end', handleEnd);
+      utterance.addEventListener('error', handleError);
+
+      // Speak the utterance
       window.speechSynthesis.speak(utterance);
     }
-  }, [speechQueue]);
+  }, [speechQueue, isProcessingSpeech, voicesLoaded]);
+
+  // Handle automatic phrase reading when phrase changes
+  useEffect(() => {
+    // Don't auto-speak if overlay is showing, voices aren't loaded, or phrase is empty
+    if (showInitialPlayOverlay || !voicesLoaded || !phrase || phrase.trim() === "") {
+      return;
+    }
+
+    // Don't auto-speak "The End!" - it will be handled by the final story effect
+    if (phrase === "The End!") {
+      return;
+    }
+
+    // Create utterance for the current phrase
+    const utterance = new SpeechSynthesisUtterance(phrase.replace(/_/g, " "));
+    const prefVoice = getPreferredVoice();
+    if (prefVoice) {
+      utterance.voice = prefVoice;
+    }
+    utterance.rate = 0.9;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // Add to speech queue
+    setSpeechQueue(queue => [...queue, utterance]);
+  }, [phrase, showInitialPlayOverlay, voicesLoaded]);
+
+  // Handle TTS button actions from TextToSpeechAACButtons component
+  const handleTTSButtonPress = useCallback((action: 'play' | 'stop', text: string) => {
+    if (action === 'play') {
+      // Add the phrase to speech queue
+      const utterance = new SpeechSynthesisUtterance(text.replace(/_/g, " "));
+      const prefVoice = getPreferredVoice();
+      if (prefVoice) {
+        utterance.voice = prefVoice;
+      }
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Add to front of queue for immediate playback
+      setSpeechQueue(queue => [utterance, ...queue]);
+    } else if (action === 'stop') {
+      // Clear the speech queue and stop current speech
+      window.speechSynthesis.cancel();
+      setSpeechQueue([]);
+      setIsProcessingSpeech(false);
+    }
+  }, []);
 
   // Not used
   const handleStoryChange = async (story: Story, phraseLimit: number) => {
@@ -800,6 +888,7 @@ export default function Home() {
           <TextToSpeechAACButtons
             text={phrase}
             disabled={isAutoReading} // Pass the auto-read state
+            onButtonPress={handleTTSButtonPress}
           />
         </div>
 
@@ -867,106 +956,6 @@ export default function Home() {
                 .find((data) => `/images/${data.image}` === image.src); // Use trimmedSections
               const effect = imageData?.effect || "none"; // Get the effect, default to 'none'
               let effectComponent = null;
-              {/*if (effect === "spin") {
-                effectComponent = (
-                  <SpinEffect key={`spin-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </SpinEffect>
-                );
-              } else if (effect === "pulse") {
-                effectComponent = (
-                  <PulseEffect key={`pulse-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </PulseEffect>
-                );
-              } else if (effect === "fade") {
-                effectComponent = (
-                  <FadeEffect key={`fade-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </FadeEffect>
-                );
-              } else if (effect === "sideToSide") {
-                effectComponent = (
-                  <SideToSideEffect key={`sidetoside-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </SideToSideEffect>
-                );
-              } else if (effect === "upAndDown") {
-                effectComponent = (
-                  <UpAndDownEffect key={`updown-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </UpAndDownEffect>
-                );
-              } else if (effect === "scaleUp") {
-                effectComponent = (
-                  <ScaleUpEffect key={`scaleup-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </ScaleUpEffect>
-                );
-              } else if (effect === "bounce") {
-                effectComponent = (
-                  <BounceEffect key={`bounce-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </BounceEffect>
-                );
-              } else if (effect === "SlideAcrossEffect") {
-                effectComponent = (
-                  <SlideAcrossEffect key={`slideacross-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </SlideAcrossEffect>
-                );
-              } else if (effect === "flip") {
-                effectComponent = (
-                  <FlipEffect key={`flip-${index}`}>
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="w-48 h-48"
-                      {...getImageAnimation()}
-                    />
-                  </FlipEffect>
-                );
-              } else {*/}
               effectComponent = (
                 <motion.img
                   key={`normal-${index}`}
@@ -993,8 +982,7 @@ export default function Home() {
             })}
           </AnimatePresence>
 
-          {/* Calls AutomaticTextToSpeech, which speech texts the current fill in the blank phrase*/}
-          {phrase && <TextToSpeechTextOnly key={phrase} text={phrase} playOverlay={showInitialPlayOverlay} />}
+          {/* Speech handled by main queue system - no separate component needed */}
 
           {showOverlay && (
             <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center">
