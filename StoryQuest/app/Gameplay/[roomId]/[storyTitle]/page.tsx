@@ -2,7 +2,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import stories, { Story } from "../../stories"; //import the stories interface
 import { useParams } from "next/navigation"; //To retrieve story based on room settings
 import AACKeyboard from "../../../Components/AACKeyboard";
@@ -163,6 +163,7 @@ export default function Home() {
   const [isFinalStoryRead, setIsFinalStoryRead] = useState(false);
   const [voicesLoaded, setVoicesLoaded] = useState(false);
   const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
+  const lastPhraseRef = useRef<string>("");
 
   // Handle voice loading
   useEffect(() => {
@@ -463,6 +464,7 @@ export default function Home() {
 
   const speakCurrentPhrase = useCallback(() => {
     setShowInitialPlayOverlay(false);
+    lastPhraseRef.current = phrase; // Mark this phrase as already read to prevent auto-reading duplication
 
     const u = new SpeechSynthesisUtterance(phrase);
     // Assign preferred voice to the utterance
@@ -510,9 +512,9 @@ export default function Home() {
     }
   }, [speechQueue, isProcessingSpeech, voicesLoaded]);
 
-  // Handle automatic phrase reading when phrase changes
+  // Auto-speak new phrases only when phrase actually changes
   useEffect(() => {
-    // Don't auto-speak if overlay is showing, voices aren't loaded, or phrase is empty
+    // Don't auto-speak if overlay is showing, voices aren't loaded, phrase is empty
     if (showInitialPlayOverlay || !voicesLoaded || !phrase || phrase.trim() === "") {
       return;
     }
@@ -522,18 +524,22 @@ export default function Home() {
       return;
     }
 
-    // Create utterance for the current phrase
-    const utterance = new SpeechSynthesisUtterance(phrase.replace(/_/g, " "));
-    const prefVoice = getPreferredVoice();
-    if (prefVoice) {
-      utterance.voice = prefVoice;
-    }
-    utterance.rate = 0.9;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
+    // Only auto-speak if this is actually a NEW phrase (different from previous)
+    if (phrase !== lastPhraseRef.current) {
+      lastPhraseRef.current = phrase; // Update the ref to current phrase
+      
+      const utterance = new SpeechSynthesisUtterance(phrase.replace(/_/g, " "));
+      const prefVoice = getPreferredVoice();
+      if (prefVoice) {
+        utterance.voice = prefVoice;
+      }
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
 
-    // Add to speech queue
-    setSpeechQueue(queue => [...queue, utterance]);
+      // Add to speech queue
+      setSpeechQueue(queue => [...queue, utterance]);
+    }
   }, [phrase, showInitialPlayOverlay, voicesLoaded]);
 
   // Handle TTS button actions from TextToSpeechAACButtons component
@@ -675,14 +681,10 @@ export default function Home() {
       return;
     }
 
-    const utterance = new SpeechSynthesisUtterance(word);
-    const prefVoice = getPreferredVoice();
-    if (prefVoice) utterance.voice = prefVoice;
+    // Don't speak the individual word - let the auto-reading speak the completed phrase
+    // This prevents duplication since the completed phrase will be auto-spoken
 
-    // Add utterance to speech queue instead of playing it directly
-    setSpeechQueue(queue => [...queue, utterance]);
-
-    // Call the function that updates the game state in Firestore
+    // Call the function that updates the game state in Firestore (this will trigger phrase change and auto-reading)
     handleWordSelect(word);
 
     // Reset announcement state and timer 
