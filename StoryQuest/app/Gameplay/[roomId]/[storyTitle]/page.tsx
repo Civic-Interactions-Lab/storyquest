@@ -798,7 +798,7 @@ export default function Home() {
 
         {/* Right Panel: Game Scene */}
         <div
-          className="w-[60%] h-full relative bg-cover bg-center flex justify-center items-center overflow-hidden"
+          className="w-[60%] h-full relative bg-cover bg-center flex justify-center items-center overflow-hidden filter background-30"
           style={{
             backgroundImage: `url('/images/${currentStory?.backgroundImage}')`,
             backgroundSize: "cover",
