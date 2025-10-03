@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "autoprefixer": "^10.4.20",
-    "firebase": "^10.14.1",
+    "firebase": "^12.3.0",
     "framer-motion": "^12.5.0",
     "jest-environment-jsdom": "^29.7.0",
     "jsqr": "^1.4.0",
