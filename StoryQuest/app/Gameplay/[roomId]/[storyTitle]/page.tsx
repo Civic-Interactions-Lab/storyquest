@@ -3,32 +3,32 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import stories, { Story, StorySection } from "../../stories"; //import the stories interface
+import stories, { Story } from "../../stories"; //import the stories interface
 import { useParams } from "next/navigation"; //To retrieve story based on room settings
 import AACKeyboard from "../../../Components/AACKeyboard";
-import useSound from "use-sound";
+// import useSound from "use-sound";
 import TextToSpeechAACButtons from "../../../Components/TextToSpeechAACButtons";
-import CompletedStory from "@/Components/CompletedStory";
+// import CompletedStory from "@/Components/CompletedStory";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  SpinEffect,
-  PulseEffect,
-  FadeEffect,
-  SideToSideEffect,
-  UpAndDownEffect,
-  ScaleUpEffect,
-  BounceEffect,
-  FlipEffect,
-  SlideAcrossEffect,
-} from "../../../Components/AnimationUtils";
+// import {
+//   SpinEffect,
+//   PulseEffect,
+//   FadeEffect,
+//   SideToSideEffect,
+//   UpAndDownEffect,
+//   ScaleUpEffect,
+//   BounceEffect,
+//   FlipEffect,
+//   SlideAcrossEffect,
+// } from "../../../Components/AnimationUtils";
 import CompletionPage from "../../../CompletionPage/page";
 import TextToSpeechTextOnly from "@/Components/TextToSpeechTextOnly";
-import useAACSounds from "@/Components/useAACSounds";
+// import useAACSounds from "@/Components/useAACSounds";
 import { db } from "../../../../firebaseControls/firebaseConfig";
 import {
   doc,
   getDoc,
-  addDoc,
+  // addDoc,
   setDoc,
   updateDoc,
   onSnapshot,
@@ -96,7 +96,7 @@ async function savePlayerProfile(
 export default function Home() {
   const skipSetup = process.env.NODE_ENV === "test";
   const [currentStory, setCurrentStory] = useState<Story | null>(null);
-  const { playSound } = useAACSounds(); // aac mp3 sound hook
+  // const { playSound } = useAACSounds(); // aac mp3 sound hook
   const [phrase, setPhrase] = useState("");
   const [userInput, setUserInput] = useState("");
   const [addedImage, setAddedImage] = useState<string | null>(null);
@@ -147,14 +147,14 @@ export default function Home() {
     null
   );
   const [speechQueue, setSpeechQueue] = useState<SpeechSynthesisUtterance[]>([]);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  // const [isSpeaking, setIsSpeaking] = useState(false);
   const [isFinalStoryRead, setIsFinalStoryRead] = useState(false);
 
   //Grabbing roomID and story title from URL
   //roomID stores in firestore
   //story chosen from create room becomes default story
   const params = useParams();
-  console.log("Params:", params); // Debugging
+  // console.log("Params:", params); // Debugging
 
   const getNextPlayerNum = (): number => {
     if (currentTurn === maxPlayers) return 1;
@@ -173,11 +173,14 @@ export default function Home() {
     async (playerNum: number) => {
       const avatar = playerAvatars[playerNum];
       if (avatar) {
-        // Audio announcement
+        // Audio announcement - add to speech queue instead of direct play
         const utterance = new SpeechSynthesisUtterance(
           `Player ${playerNum}, ${avatar}, it's your turn!`
         );
-        window.speechSynthesis.speak(utterance);
+        const prefVoice = getPreferredVoice();
+        if (prefVoice) utterance.voice = prefVoice;
+
+        setSpeechQueue(queue => [...queue, utterance]);
 
         // Visual highlight
         setHighlightedPlayer(playerNum);
@@ -418,8 +421,9 @@ export default function Home() {
         setShowOverlay(true);
       };
 
+      // Add to speech queue instead of direct play
       setTimeout(() => {
-        window.speechSynthesis.speak(finalUtterance);
+        setSpeechQueue(queue => [...queue, finalUtterance]);
       }, 1500);
     }
   }, [storyCompleted, isFinalStoryRead, completedPhrases]);
@@ -442,27 +446,30 @@ export default function Home() {
 
   // useEffect to process speach queue
   useEffect(() => {
+    console.log("SPEECH QUEUE", speechQueue);
     // Only proceed if there are words to speak and TTS is not speaking at the moment
-    if (speechQueue.length > 0 && !isSpeaking && !storyCompleted) {
-      setIsSpeaking(true);
-      
+    if (speechQueue.length > 0) {
+      // setIsSpeaking(true);
+
       // Get the first utterance from the queue
       const utterance = speechQueue[0];
-     
-      // When utterance finishes speaking, removes firwst item from queue and resets isSpeaking
-      utterance.onend = () => {
+
+      // When utterance finishes speaking, removes first item from queue and resets isSpeaking
+      utterance.addEventListener('end', () => {
+        console.log("Finished utterance:", utterance);
         setSpeechQueue((prevQueue) => prevQueue.slice(1));
-        setIsSpeaking(false);
-      };
-      
-      utterance.onerror = (e) => {
-        console.warn("Speech synthesis error:", e);
+        // setIsSpeaking(false);
+      });
+
+      utterance.addEventListener('error', (e) => {
+        console.warn("Speech synthesis utterance error:", e);
+        console.warn("Problematic utterance:", utterance);
         setSpeechQueue((prevQueue) => prevQueue.slice(1));
-        setIsSpeaking(false);
-      };
+        // setIsSpeaking(false);
+      });
       window.speechSynthesis.speak(utterance);
     }
-  }, [speechQueue, isSpeaking]);
+  }, [speechQueue]);
 
   // Not used
   const handleStoryChange = async (story: Story, phraseLimit: number) => {
