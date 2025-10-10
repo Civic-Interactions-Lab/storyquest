@@ -37,6 +37,8 @@ import {
   collection,
   runTransaction,
 } from "firebase/firestore"; // to update the firestore database with game data
+import useStableVoice from "@/Components/useStableVoice";
+
 
 const availableAvatars = ["🐯", "🐻", "🦄", "🐰", "🐬", "🦋"];
 
@@ -122,7 +124,7 @@ export default function Home() {
   const [maxPlayers, setMaxPlayers] = useState<number>(4);
   const [lastPlayedWord, setLastPlayedWord] = useState<string | null>(null);
   const [lastPlayedTimestamp, setLastPlayedTimestamp] = useState<number | null>(null);
-  const [ttsReady, setTtsReady] = useState(false);
+  const { ready: ttsReady, speak, voice } = useStableVoice();
   const [avatarModalOpen, setAvatarModalOpen] = useState<boolean>(false); //Opens window for player to choose avatar
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [playerAvatars, setPlayerAvatars] = useState<{
@@ -174,10 +176,7 @@ export default function Home() {
       const avatar = playerAvatars[playerNum];
       if (avatar) {
         // Audio announcement
-        const utterance = new SpeechSynthesisUtterance(
-          `Player ${playerNum}, ${avatar}, it's your turn!`
-        );
-        window.speechSynthesis.speak(utterance);
+        speak(`Player ${playerNum}, ${avatar}, it's your turn!`);
 
         // Visual highlight
         setHighlightedPlayer(playerNum);
