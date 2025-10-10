@@ -30,3 +30,4 @@ sidebar_position: 3
 ## Additional Tools
 **Project Management**
 - Jira - Agile ticketing system for tracking deployment tasks.
+- Browser - Default browser for system to keep consist voice.
