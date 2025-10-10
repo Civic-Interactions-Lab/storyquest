@@ -248,10 +248,21 @@ export default function Home() {
         const gameData = snapshot.data();
         console.log("Firestore data received:", gameData);
 
-        const dbPhrase = gameData.currentPhrase ?? "";
-        if (dbPhrase.trim() !== "") {
-          setPhrase(dbPhrase);
+        const newPhraseFromDB = gameData.currentPhrase || "";
+        //Implemented a new way for the phrase to be said which interrupted button presses. Initialized phrases to bottom
+        if (newPhraseFromDB && newPhraseFromDB !== phrase) {
+          if (completedPhrases.length > 0) {
+            const utterance = new SpeechSynthesisUtterance(newPhraseFromDB);
+            const prefVoice = getPreferredVoice();
+            if (prefVoice) {
+              utterance.voice = prefVoice;
+            }
+            setSpeechQueue(queue => [...queue, utterance]);
+          }
         }
+        // Update the local state with the new data
+        setPhrase(newPhraseFromDB);
+
 
         setMaxPlayers(gameData.maxPlayers || 4);
         setCurrentSectionIndex(gameData.currentSectionIndex || 0);
@@ -297,7 +308,7 @@ export default function Home() {
     });
 
     return () => unsubscribe();
-  }, [roomId, lastPlayedWord, currentStory]); // Added currentStory to dependency array
+  }, [roomId, lastPlayedWord, currentStory, phrase, completedPhrases]); // Added currentStory to dependency array
 
   useEffect(() => {
     if (!storyTitle || stories.length === 0) return;
@@ -979,9 +990,6 @@ export default function Home() {
               );
             })}
           </AnimatePresence>
-
-          {/* Calls AutomaticTextToSpeech, which speech texts the current fill in the blank phrase*/}
-          {phrase && <TextToSpeechTextOnly key={phrase} text={phrase} playOverlay={showInitialPlayOverlay} />}
 
           {showOverlay && (
             <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center">
