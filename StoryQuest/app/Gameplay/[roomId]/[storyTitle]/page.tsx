@@ -7,7 +7,6 @@ import stories, { Story, StorySection } from "../../stories"; //import the stori
 import { useParams } from "next/navigation"; //To retrieve story based on room settings
 import AACKeyboard from "../../../Components/AACKeyboard";
 import useSound from "use-sound";
-import TextToSpeechAACButtons from "../../../Components/TextToSpeechAACButtons";
 import CompletedStory from "@/Components/CompletedStory";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -789,11 +788,6 @@ export default function Home() {
               blockButtons={blockOverlay} // Last phrase "The End!"
             />
           </div>
-
-          <TextToSpeechAACButtons
-            text={phrase}
-            disabled={isAutoReading} // Pass the auto-read state
-          />
         </div>
 
         {/* Right Panel: Game Scene */}
