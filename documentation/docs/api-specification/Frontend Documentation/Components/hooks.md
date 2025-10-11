@@ -1,8 +1,8 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 ---
 
-# Hooks 
+# Hooks
 
 ## `useButtonFeedback` Hook
 
@@ -15,16 +15,16 @@ This hook is ideal for improving accessibility and user interaction by adding au
 #### Example Usage
 
 ```tsx
-import React from 'react';
-import useButtonFeedback from './useButtonFeedback';
+import React from "react";
+import useButtonFeedback from "./useButtonFeedback";
 
 const MyComponent: React.FC = () => {
   const { buttonHandler, isSpeaking } = useButtonFeedback();
 
   const handleClick = () => {
     buttonHandler(
-      'select', 
-      'You have selected this option.', 
+      "select",
+      "You have selected this option.",
       (text) => console.log(text) // Example speech function (you would replace this with actual text-to-speech logic)
     );
   };
@@ -36,6 +36,7 @@ const MyComponent: React.FC = () => {
   );
 };
 ```
+
 ## `useAACSounds` Hook
 
 The `useAACSounds` hook is designed to manage and play AAC keyboard button sounds for various words. It uses the `use-sound` library to play MP3 files for each corresponding word, with customizable volume control.
@@ -47,8 +48,8 @@ This hook provides a function to play sounds associated with predefined words (e
 #### Example Usage
 
 ```tsx
-import React from 'react';
-import useAACSounds from './useAACSounds';
+import React from "react";
+import useAACSounds from "./useAACSounds";
 
 const AACKeyboard: React.FC = () => {
   const { playSound } = useAACSounds();
@@ -59,14 +60,15 @@ const AACKeyboard: React.FC = () => {
 
   return (
     <div>
-      <button onClick={() => handleButtonClick('apples')}>Apples</button>
-      <button onClick={() => handleButtonClick('airplane')}>Airplane</button>
-      <button onClick={() => handleButtonClick('alien')}>Alien</button>
+      <button onClick={() => handleButtonClick("apples")}>Apples</button>
+      <button onClick={() => handleButtonClick("airplane")}>Airplane</button>
+      <button onClick={() => handleButtonClick("alien")}>Alien</button>
       {/* Add more buttons for other words */}
     </div>
   );
 };
 ```
+
 ## `useQuickTextToSpeech` Hook
 
 The `useQuickTextToSpeech` hook provides functionality for text-to-speech (TTS), allowing you to speak text aloud with configurable voices and platform-specific settings. It also supports stopping ongoing speech and selecting voices based on priority for various platforms.
@@ -78,15 +80,15 @@ This hook is ideal for adding voice feedback in web applications, ensuring acces
 #### Example Usage
 
 ```tsx
-import React, { useEffect } from 'react';
-import useQuickTextToSpeech from './useQuickTextToSpeech';
+import React, { useEffect } from "react";
+import useQuickTextToSpeech from "./useQuickTextToSpeech";
 
 const MyComponent: React.FC = () => {
   const { speak, stop, isReady } = useQuickTextToSpeech();
 
   useEffect(() => {
     if (isReady) {
-      speak('Hello, welcome to the site!');
+      speak("Hello, welcome to the site!");
     }
   }, [isReady, speak]);
 
@@ -101,6 +103,7 @@ const MyComponent: React.FC = () => {
   );
 };
 ```
+
 ## `useTextToSpeech` Hook
 
 The `useTextToSpeech` hook provides advanced functionality for text-to-speech (TTS) synthesis in React applications. It includes features such as selecting an optimal voice for the platform, retry mechanisms for mobile browsers, and the ability to speak and stop speech dynamically.
@@ -112,15 +115,15 @@ This hook is ideal for adding TTS features with voice selection and retry mechan
 #### Example Usage
 
 ```tsx
-import React, { useEffect } from 'react';
-import useTextToSpeech from './useTextToSpeech';
+import React, { useEffect } from "react";
+import useTextToSpeech from "./useTextToSpeech";
 
 const MyComponent: React.FC = () => {
   const { speak, stop, isReady } = useTextToSpeech();
 
   useEffect(() => {
     if (isReady) {
-      speak('Welcome to the site!');
+      speak("Welcome to the site!");
     }
   }, [isReady, speak]);
 
