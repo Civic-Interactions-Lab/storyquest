@@ -43,6 +43,8 @@ The component manages multiple state variables including:
 - `CompletedStory`: Renders post-game story summary
 - `CompletionPage`: Final page shown after a story is completed
 - `AnimationUtils`: Includes animated effects for selected images
+- `preferredVoices`:  picks the first installed voice that matches preferred list
+
 
 ## Game Logic Highlights
 

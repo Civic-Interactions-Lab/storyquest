@@ -45,7 +45,7 @@ const loadPreferredVoices = (): SpeechSynthesisVoice[] => {
   return voices.filter((v) => v.lang.includes("en-US"));
 };
 
-const preferredVoices = ["Google US English", "Samantha", "Microsoft Zira Desktop", "Microsoft Aria Online (Natural)", "Google US Female",];
+const preferredVoices = ["Samantha", "Google US English", "Microsoft Zira Desktop", "Microsoft Aria Online (Natural)", "Google US Female",];
 
 const getPreferredVoice = (): SpeechSynthesisVoice | null => {
   const voices = loadPreferredVoices();
