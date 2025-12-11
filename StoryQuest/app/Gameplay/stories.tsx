@@ -44,7 +44,7 @@ const stories: Story[] = [
     },
     sections: [
       {
-        phrase: "Look in the garden, there is a ＿.",
+        phrase: "Look in the garden, there is a ___.",
         words: {
           mouse: {
             image: "mouse.svg",
@@ -70,7 +70,7 @@ const stories: Story[] = [
       },
 
       {
-        phrase: "And playing on the left is a ＿.",
+        phrase: "And playing on the left is a ___.",
         words: {
           mouse: {
             image: "mouse.svg",
