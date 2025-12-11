@@ -444,7 +444,7 @@ export default function Home() {
       console.log(`Turn ${currentTurn} (Initial Play) started at: ${turnStartTimeRef.current}`);
     }
 
-    const u = new SpeechSynthesisUtterance(phrase);
+    const u = new SpeechSynthesisUtterance(phrase.replace(/_/g, " "));
     // Assign preferred voice to the utterance
     const prefVoice = getPreferredVoice();
     if (prefVoice) {
